@@ -1,4 +1,5 @@
 import requests
+import whois
 
 def get_subdomains(domain:str):
     
@@ -17,6 +18,25 @@ def get_subdomains(domain:str):
     # list convierte el conjunto de nuevo en una lista
     return list(set(subdominios))
 
+def get_whois_info(domain:str):
+    whois_data = {}
+
+    resultado = whois.whois(domain)
+
+    whois_data = {
+        "domain_name":resultado["domain_name"],
+        "registrar":resultado["registrar"],
+        "creation_date":resultado["creation_date"],
+        "expiration_date":resultado["expiration_date"],
+        "country":resultado["country"],
+        "org":resultado["org"],
+        "name_servers":resultado["name_servers"]
+    }
+
+    return whois_data
+
+
+
 if __name__ == "__main__":
-    resultado = get_subdomains("github.com")
-    print(resultado[:3])    
+    print(get_subdomains("github.com")[:3])
+    print(get_whois_info("github.com"))
