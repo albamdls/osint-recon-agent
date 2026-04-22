@@ -17,6 +17,7 @@ def mostrar_menu():
         console.print(banner, style="cyan")
         titulo = Text("OSINT RECON AGENT", style="bold cyan", justify="center")
         opciones = Text()
+        # opciones.append(banner, style="cyan")
         opciones.append("\n[1] ", style="bold green")
         opciones.append("Analizar dominio\n")
         opciones.append("[2] ", style="bold red")
@@ -25,20 +26,23 @@ def mostrar_menu():
         op = int(input("\nSelecciona una opción: "))
     return op
 
-op = mostrar_menu()
+while True:
+    op = mostrar_menu()
 
-if op==1:
-    dominio=input("Introduce el dominio que quieres analizar:")
-    inputs={"messages": [{"role":"user", "content":f"Analiza el dominio: {dominio}"}]}
-    for chunk in agent.stream(inputs, stream_mode="updates"):
-        if "model" in chunk:
-            mensaje = chunk["model"]["messages"][-1]
+    if op==1:
+        dominio=input("Introduce el dominio que quieres analizar:")
+        inputs={"messages": [{"role":"user", "content":f"Analiza el dominio: {dominio}"}]}
 
-            if isinstance(mensaje.content, str):
-                md = Markdown(mensaje.content)
-                console.print(md)
-elif op==2:
-    print("Hasta pronto compi!")
-    exit()
-else:
-    print("Formato de respuesta incorrecto.")
+        with console.status("[cyan]Analizando dominio...", spinner="dots"):
+            for chunk in agent.stream(inputs, stream_mode="updates"):
+                if "model" in chunk:
+                    mensaje = chunk["model"]["messages"][-1]
+
+                    if isinstance(mensaje.content, str):
+                        md = Markdown(mensaje.content)
+                        console.print(md)
+    elif op==2:
+        print("Hasta pronto compi!")
+        exit()
+    else:
+        print("Formato de respuesta incorrecto.")
