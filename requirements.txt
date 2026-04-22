@@ -1,6 +1,10 @@
 langchain
 langchain-openai
+langchain-anthropic
+langchain-ollama
 pydantic
 python-dotenv
 requests
 python-whois
+rich
+pyfiglet
