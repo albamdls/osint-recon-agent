@@ -2,13 +2,13 @@ import os
 from dotenv import load_dotenv
 
 from langchain.agents import create_agent
-from src.tools import get_subdomains, get_whois_info, get_dns_records
+from src.tools import get_subdomains, get_whois_info, get_dns_records, get_http_headers, check_hibp
 
 # Cargar variables de entorno
 load_dotenv()
 
 # Definir las herramientas que usará el agente
-tools = [get_subdomains, get_whois_info, get_dns_records]
+tools = [get_subdomains, get_whois_info, get_dns_records, get_http_headers, check_hibp]
 
 # Crear el agente
 agent = create_agent(
@@ -28,6 +28,8 @@ agent = create_agent(
     - get_subdomains: descubre subdominios consultando certificados SSL en crt.sh
     - get_whois_info: obtiene información de registro del dominio (registrador, fechas, organización)
     - get_dns_records: consulta registros DNS reales (A, MX, TXT, NS)
+    - get_http_headers: analiza cabeceras de seguridad HTTP y tecnologías expuestas
+    - check_hibp: verifica filtraciones de credenciales del dominio
 
     FORMATO DEL INFORME:
     - Presenta los datos reales obtenidos de las herramientas
