@@ -1,5 +1,52 @@
+# Entorno virtual
 venv/
+env/
 .env
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Informes generados
+informes/
+
+# Base de datos
+*.db
+*.sqlite
+
+# Logs
+*.log
+logs/
+
+# Archivos del sistema
 .DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Chromadb (para cuando implementemos RAG)
+chroma_db/
+*.chroma
+
+# Claves y configuración sensible
+*.pem
+*.key
+config_local.py
+
+# Documentación generada
+docs/baseline_metrics.png
+docs/calidad_radar.png
