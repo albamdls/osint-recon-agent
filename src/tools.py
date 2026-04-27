@@ -1,5 +1,7 @@
 import requests
 import whois
+import time
+import dns.resolver
 
 from langchain.tools import tool
 
@@ -12,9 +14,14 @@ def get_subdomains(domain:str):
 
     try:
         url = f"https://crt.sh/?q=%.{domain}&output=json"
-        
         headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(url, headers=headers)
+
+        for intento in range(3):
+            response = requests.get(url, headers=headers, timeout=10)
+            if response.status_code == 200 and response.text.strip():
+                break
+            time.sleep(2)
+        
         datos = response.json()
 
         subdominios=[]
@@ -50,6 +57,53 @@ def get_whois_info(domain:str):
             "name_servers":resultado["name_servers"]
         }
 
-        return whois_data
     except Exception as e:
         print(f"Error al utilizar la herramienta whois: {str(e)}")
+
+    return whois_data
+
+@tool
+def get_dns_records(domain:str):
+    """
+    Consulta los registros DNS de un dominio dado.
+    Devuelve registros de tipo A (IPs), MX (servidores de correo),
+    TXT (verificaciones y políticas de seguridad) y NS (servidores DNS).
+    Útil para mapear la infraestructura y servicios del dominio.
+    """
+
+    records = {
+        "A": [],
+        "MX":[],
+        "TXT":[],
+        "NS":[]
+    }
+
+    try:
+        for record in dns.resolver.resolve(domain, "A"):
+            records["A"].append(str(record))
+    except Exception as e:
+        print(f"Error en A: {e}")
+        pass
+
+    try:
+        for record in dns.resolver.resolve(domain, "MX"):
+            records["MX"].append(str(record))
+    except Exception as e:
+        print(f"Error en MX: {e}")
+        pass
+
+    try:
+        for record in dns.resolver.resolve(domain, "TXT"):
+            records["TXT"].append(str(record))
+    except Exception as e:
+        print(f"Error en TXT: {e}")
+        pass
+
+    try:
+        for record in dns.resolver.resolve(domain, "NS"):
+            records["NS"].append(str(record))       
+    except Exception as e:
+        print(f"Error en NS: {e}")
+        pass
+
+    return records

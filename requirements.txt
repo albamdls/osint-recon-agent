@@ -8,3 +8,4 @@ requests
 python-whois
 rich
 pyfiglet
+dnspython
