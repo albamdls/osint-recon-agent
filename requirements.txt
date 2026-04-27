@@ -9,3 +9,5 @@ python-whois
 rich
 pyfiglet
 dnspython
+fpdf2
+questionary

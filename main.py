@@ -1,48 +1,138 @@
 from src.agent import agent
-
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.text import Text
-
 from pyfiglet import figlet_format
+from reports.pdf_generator import generar_pdf
+import questionary
+from questionary import Style
 
-banner = figlet_format("OSINT SCANNER", font="slant")
+console = Console()
 
-console=Console()
+estilo_menu = Style([
+    ('qmark', 'fg:cyan bold'),
+    ('question', 'fg:white bold'),
+    ('answer', 'fg:cyan bold'),
+    ('pointer', 'fg:cyan bold'),
+    ('highlighted', 'fg:cyan bold'),
+    ('selected', 'fg:green bold'),
+    ('separator', 'fg:cyan'),
+    ('instruction', 'fg:white'),
+])
+
+def mostrar_banner():
+    banner = figlet_format("OSINT AI CLI", font="doom")
+    titulo = Text(banner, style="bold green")
+    subtitulo = Text()
+    subtitulo.append("[ ", style="green")
+    subtitulo.append("Reconocimiento OSINT con Inteligencia Artificial", style="bold white")
+    subtitulo.append(" ]", style="green")
+    autor = Text()
+    autor.append("[ ", style="green")
+    autor.append("Desarrollado por ", style="dim white")
+    autor.append("Alba Mora", style="bold green")
+    autor.append(" · Proyecto Final IA Automatización 2025", style="dim white")
+    autor.append(" ]", style="green")
+    disclaimer = Text(justify="center")
+    disclaimer.append("⚠  ", style="bold yellow")
+    disclaimer.append("SOLO PARA USO ACADÉMICO Y EDUCATIVO", style="bold yellow")
+    disclaimer.append("  ⚠", style="bold yellow")
+    disclaimer.append("\n   Esta herramienta está diseñada únicamente con fines de aprendizaje.", style="dim yellow")
+    disclaimer.append("\n   El uso no autorizado contra sistemas ajenos es ilegal.", style="dim yellow")
+    console.print(titulo, justify="center")
+    console.print(subtitulo, justify="center")
+    console.print(autor, justify="center")
+    console.print()
+    console.print(Panel(disclaimer, border_style="yellow", padding=(0, 2)), justify="center")
+    console.print()
 
 def mostrar_menu():
-    op = 0
-    while op != 1 and op != 2:
-        console.print(banner, style="cyan")
-        titulo = Text("OSINT RECON AGENT", style="bold cyan", justify="center")
-        opciones = Text()
-        # opciones.append(banner, style="cyan")
-        opciones.append("\n[1] ", style="bold green")
-        opciones.append("Analizar dominio\n")
-        opciones.append("[2] ", style="bold red")
-        opciones.append("Salir\n")
-        console.print(Panel(opciones, title=titulo, border_style="cyan"))
-        op = int(input("\nSelecciona una opción: "))
-    return op
+    return questionary.select(
+        "¿Qué quieres hacer?",
+        choices=[
+            questionary.Choice("⚡ Análisis completo", value=1),
+            questionary.Choice("🔧 Análisis personalizado", value=2),
+            questionary.Choice("✖  Salir", value=3),
+        ],
+        style=estilo_menu
+    ).ask()
+
+def mostrar_submenu():
+    return questionary.checkbox(
+        "Selecciona las herramientas:",
+        choices=[
+            questionary.Choice("🌐 Subdominios (crt.sh)", value="Subdominios (crt.sh)"),
+            questionary.Choice("📋 WHOIS", value="WHOIS"),
+            questionary.Choice("🔗 Registros DNS", value="Registros DNS"),
+            questionary.Choice("🔒 Headers HTTP", value="Headers HTTP"),
+            questionary.Choice("⚠️  Filtraciones (LeakCheck)", value="Filtraciones (LeakCheck)"),
+        ],
+        style=estilo_menu
+    ).ask()
+
+def construir_prompt(dominio, herramientas):
+    if herramientas is None:
+        return f"Realiza un análisis OSINT completo del dominio {dominio} usando todas las herramientas disponibles."
+    nombres = {
+        "Subdominios (crt.sh)": "get_subdomains",
+        "WHOIS": "get_whois_info",
+        "Registros DNS": "get_dns_records",
+        "Headers HTTP": "get_http_headers",
+        "Filtraciones (LeakCheck)": "check_hibp"
+    }
+    tools_seleccionadas = [nombres[h] for h in herramientas]
+    tools_str = ", ".join(tools_seleccionadas)
+    return f"Analiza el dominio {dominio} usando ÚNICAMENTE estas herramientas: {tools_str}. No uses ninguna otra."
 
 while True:
+    mostrar_banner()
     op = mostrar_menu()
 
-    if op==1:
-        dominio=input("Introduce el dominio que quieres analizar:")
-        inputs={"messages": [{"role":"user", "content":f"Analiza el dominio: {dominio}"}]}
+    if op == 3:
+        console.print("\n[bold green]Hasta pronto, agente. ⚡[/bold green]\n")
+        break
 
-        with console.status("[cyan]Analizando dominio...", spinner="dots"):
-            for chunk in agent.stream(inputs, stream_mode="updates"):
-                if "model" in chunk:
-                    mensaje = chunk["model"]["messages"][-1]
+    dominio = questionary.text(
+        "Introduce el dominio a analizar:",
+        style=estilo_menu
+    ).ask()
 
-                    if isinstance(mensaje.content, str):
-                        md = Markdown(mensaje.content)
-                        console.print(md)
-    elif op==2:
-        print("Hasta pronto compi!")
-        exit()
-    else:
-        print("Formato de respuesta incorrecto.")
+    if not dominio:
+        console.print("[red]Dominio no válido.[/red]")
+        continue
+
+    herramientas = None
+    if op == 2:
+        herramientas = mostrar_submenu()
+        if not herramientas:
+            console.print("[red]Debes seleccionar al menos una herramienta.[/red]")
+            continue
+
+    prompt = construir_prompt(dominio, herramientas)
+    inputs = {"messages": [{"role": "user", "content": prompt}]}
+
+    resultado = ""
+    with console.status("[cyan]Analizando dominio...", spinner="dots"):
+        for chunk in agent.stream(inputs, stream_mode="updates"):
+            if "model" in chunk:
+                mensaje = chunk["model"]["messages"][-1]
+                if isinstance(mensaje.content, str):
+                    resultado = mensaje.content
+
+    console.print(Markdown(resultado))
+
+    exportar = questionary.confirm(
+        "¿Deseas exportar el informe a PDF?",
+        style=estilo_menu
+    ).ask()
+
+    if exportar:
+        nombre_custom = questionary.text(
+            "Nombre del fichero (Enter para nombre por defecto):",
+            style=estilo_menu
+        ).ask()
+
+        with console.status("[cyan]Generando PDF...", spinner="dots"):
+            fichero = generar_pdf(dominio, resultado, nombre_custom if nombre_custom else None)
+        console.print(f"\n[bold green]✔ PDF guardado en: {fichero}[/bold green]\n")
