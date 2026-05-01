@@ -3,9 +3,13 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.text import Text
+from rich.live import Live
+from rich.table import Table
+from rich.spinner import Spinner
 from pyfiglet import figlet_format
 from reports.pdf_generator import generar_pdf
 import questionary
+import json
 from questionary import Style
 
 console = Console()
@@ -53,7 +57,7 @@ def mostrar_menu():
         choices=[
             questionary.Choice("⚡ Análisis completo", value=1),
             questionary.Choice("🔧 Análisis personalizado", value=2),
-            questionary.Choice("✖  Salir", value=3),
+            questionary.Choice("❌  Salir", value=3),
         ],
         style=estilo_menu
     ).ask()
@@ -90,7 +94,7 @@ while True:
     op = mostrar_menu()
 
     if op == 3:
-        console.print("\n[bold green]Hasta pronto, agente. ⚡[/bold green]\n")
+        console.print("\n[bold green]¡Hasta pronto!. 🤖⚡[/bold green]\n")
         break
 
     dominio = questionary.text(
@@ -113,12 +117,26 @@ while True:
     inputs = {"messages": [{"role": "user", "content": prompt}]}
 
     resultado = ""
+    mensajes_texto = []
+
     with console.status("[cyan]Analizando dominio...", spinner="dots"):
         for chunk in agent.stream(inputs, stream_mode="updates"):
             if "model" in chunk:
-                mensaje = chunk["model"]["messages"][-1]
-                if isinstance(mensaje.content, str):
-                    resultado = mensaje.content
+                for msg in chunk["model"]["messages"]:
+                    contenido = getattr(msg, "content", "")
+                    if isinstance(contenido, str) and len(contenido) > 200:
+                        mensajes_texto.append(contenido)
+                    elif isinstance(contenido, list):
+                        for bloque in contenido:
+                            if isinstance(bloque, dict) and bloque.get("type") == "text":
+                                texto = bloque.get("text", "")
+                                if len(texto) > 200:
+                                    mensajes_texto.append(texto)
+
+    if mensajes_texto:
+        resultado = max(mensajes_texto, key=len)
+    else:
+        resultado = ""
 
     console.print(Markdown(resultado))
 

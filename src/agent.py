@@ -2,6 +2,8 @@ import os
 from dotenv import load_dotenv
 
 from langchain.agents import create_agent
+from langchain.agents.middleware import TodoListMiddleware
+
 from src.tools import get_subdomains, get_whois_info, get_dns_records, get_http_headers, check_hibp
 
 # Cargar variables de entorno
@@ -14,8 +16,12 @@ tools = [get_subdomains, get_whois_info, get_dns_records, get_http_headers, chec
 agent = create_agent(
     model="anthropic:claude-haiku-4-5",
     tools=tools,
+    middleware=[TodoListMiddleware()],
     system_prompt="""
     Eres un analista experto en ciberseguridad y reconocimiento OSINT.
+
+    IMPORTANTE: Antes de ejecutar cualquier herramienta, DEBES usar write_todos para 
+    crear un plan de tareas. Esto es obligatorio en cada análisis.
 
     REGLAS ESTRICTAS:
     1. SIEMPRE usa las herramientas disponibles antes de responder. Nunca respondas sin haberlas ejecutado.
@@ -37,7 +43,3 @@ agent = create_agent(
     - No añadas información que no provenga de las herramientas
     """
 )
-# if __name__ == "__main__":
-#    inputs = {"messages": [{"role": "user", "content":"Analiza el dominio github.com"}]}
-#    for chunk in agent.stream(inputs, stream_mode="updates"):
-#        print(chunk)
