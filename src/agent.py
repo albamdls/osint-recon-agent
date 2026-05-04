@@ -5,12 +5,13 @@ from langchain.agents import create_agent
 from langchain.agents.middleware import TodoListMiddleware
 
 from src.tools import get_subdomains, get_whois_info, get_dns_records, get_http_headers, check_hibp
+from rag.rag_tool import consultar_base_conocimiento
 
 # Cargar variables de entorno
 load_dotenv()
 
 # Definir las herramientas que usará el agente
-tools = [get_subdomains, get_whois_info, get_dns_records, get_http_headers, check_hibp]
+tools = [get_subdomains, get_whois_info, get_dns_records, get_http_headers, check_hibp, consultar_base_conocimiento]
 
 # Crear el agente
 agent = create_agent(
@@ -36,6 +37,7 @@ agent = create_agent(
     - get_dns_records: consulta registros DNS reales (A, MX, TXT, NS)
     - get_http_headers: analiza cabeceras de seguridad HTTP y tecnologías expuestas
     - check_hibp: verifica filtraciones de credenciales del dominio
+    - consultar_base_conocimiento: consulta la base de conocimiento experta en ciberseguridad para contextualizar hallazgos
 
     FORMATO DEL INFORME:
     - Presenta los datos reales obtenidos de las herramientas

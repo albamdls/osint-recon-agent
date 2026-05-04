@@ -11,3 +11,6 @@ pyfiglet
 dnspython
 fpdf2
 questionary
+chromadb
+langchain-chroma
+langchain-text-splitters
