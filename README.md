@@ -166,22 +166,26 @@ The notebook `notebooks/evaluacion_baseline.ipynb` documents:
 ## 📝 Usage
 
 ### Full domain analysis
+``` 
 python -m main
 → ⚡ Full analysis
 → Enter domain: example.com
+``` 
 
 ### Custom analysis
-
+``` 
 python -m main
 → 🔧 Custom analysis
 → Select tools with spacebar
 → Enter domain
+``` 
 
 ### Scan secrets in GitHub
-
+``` 
 python -m main
 → 🔍 Scan secrets in GitHub
 → Enter user or organization: username
+``` 
 
 ---
 

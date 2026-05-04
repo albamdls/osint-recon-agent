@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
-from src.schemas import ReconReport, WhoisInfo, DNSInfo, HeadersInfo, FiltracionesInfo
+from src.schemas import ReconReport, WhoisInfo, DNSInfo, HeadersInfo, BreachesInfo
 from src.tools import get_subdomains, get_whois_info, get_dns_records, get_http_headers, check_hibp
 from datetime import datetime
 
@@ -10,58 +10,58 @@ load_dotenv()
 llm = ChatAnthropic(model="claude-haiku-4-5-20251001")
 llm_structured = llm.with_structured_output(ReconReport)
 
-def analizar_dominio_estructurado(dominio: str) -> ReconReport:
+def analyze_domain_structured(domain: str) -> ReconReport:
     """
-    Ejecuta las herramientas OSINT y devuelve un informe estructurado
-    usando Pydantic para garantizar el formato de salida.
+    Runs OSINT tools and returns a structured report
+    using Pydantic to guarantee the output format.
     """
-    # 1. Ejecutar herramientas directamente
-    resultados = {}
-    herramientas_fallidas = []
+    # 1. Run tools directly
+    results = {}
+    failed_tools = []
 
     try:
-        resultados["whois"] = get_whois_info.invoke({"domain": dominio})
+        results["whois"] = get_whois_info.invoke({"domain": domain})
     except Exception as e:
-        herramientas_fallidas.append(f"whois: {str(e)}")
+        failed_tools.append(f"whois: {str(e)}")
 
     try:
-        resultados["dns"] = get_dns_records.invoke({"domain": dominio})
+        results["dns"] = get_dns_records.invoke({"domain": domain})
     except Exception as e:
-        herramientas_fallidas.append(f"dns: {str(e)}")
+        failed_tools.append(f"dns: {str(e)}")
 
     try:
-        resultados["subdominios"] = get_subdomains.invoke({"domain": dominio})
+        results["subdomains"] = get_subdomains.invoke({"domain": domain})
     except Exception as e:
-        herramientas_fallidas.append(f"subdominios: {str(e)}")
+        failed_tools.append(f"subdomains: {str(e)}")
 
     try:
-        resultados["headers"] = get_http_headers.invoke({"domain": dominio})
+        results["headers"] = get_http_headers.invoke({"domain": domain})
     except Exception as e:
-        herramientas_fallidas.append(f"headers: {str(e)}")
+        failed_tools.append(f"headers: {str(e)}")
 
     try:
-        resultados["filtraciones"] = check_hibp.invoke({"domain": dominio})
+        results["breaches"] = check_hibp.invoke({"domain": domain})
     except Exception as e:
-        herramientas_fallidas.append(f"filtraciones: {str(e)}")
+        failed_tools.append(f"breaches: {str(e)}")
 
-    # 2. Pedir al LLM que estructure los datos
+    # 2. Ask the LLM to structure the data
     prompt = f"""
-    Analiza los siguientes datos OSINT del dominio {dominio} y devuelve un informe estructurado.
+    Analyze the following OSINT data for the domain {domain} and return a structured report.
     
-    Datos recopilados:
-    {resultados}
+    Collected data:
+    {results}
     
-    Herramientas fallidas: {herramientas_fallidas}
+    Failed tools: {failed_tools}
     
-    Rellena todos los campos del schema con la información disponible.
-    Para nivel_riesgo usa: BAJO, MEDIO, ALTO o CRÍTICO.
-    Para resumen escribe 2-3 frases resumiendo los hallazgos más importantes.
-    Para recomendaciones lista las 3-5 más importantes.
+    Fill in all schema fields with the available information.
+    For risk_level use: LOW, MEDIUM, HIGH or CRITICAL.
+    For summary write 2-3 sentences summarizing the most important findings.
+    For recommendations list the 3-5 most important ones.
     """
 
-    reporte = llm_structured.invoke(prompt)
-    reporte.dominio = dominio
-    reporte.fecha_analisis = datetime.now().strftime("%d/%m/%Y %H:%M")
-    reporte.herramientas_fallidas = herramientas_fallidas
+    report = llm_structured.invoke(prompt)
+    report.domain = domain
+    report.analysis_date = datetime.now().strftime("%d/%m/%Y %H:%M")
+    report.failed_tools = failed_tools
 
-    return reporte
+    return report

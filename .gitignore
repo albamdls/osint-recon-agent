@@ -18,7 +18,7 @@ build/
 *.ipynb_checkpoints
 
 # Informes generados
-informes/
+pdf_reports/
 
 # Base de datos
 *.db

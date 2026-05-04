@@ -1,22 +1,22 @@
 from src.schemas import ReconReport
 
-def calcular_score(reporte: ReconReport) -> dict:
+def calculate_score(report: ReconReport) -> dict:
     """
-    Calcula un score de riesgo basado en los hallazgos del informe.
-    Devuelve score numérico y nivel de riesgo.
+    Calculates a risk score based on the findings in the report.
+    Returns numeric score and risk level.
     """
     score = 0
-    detalles = []
+    details = []
 
     # WHOIS
-    if reporte.whois:
-        if reporte.whois.registrador:
+    if report.whois:
+        if report.whois.registrar:
             score -= 5
-            detalles.append(("✅ Registrador profesional", -5))
+            details.append(("✅ Professional registrar", -5))
 
-    # Headers HTTP
-    if reporte.headers:
-        cabeceras_criticas = {
+    # HTTP Headers
+    if report.headers:
+        critical_headers = {
             "Content-Security-Policy": 25,
             "Strict-Transport-Security": 20,
             "X-Frame-Options": 15,
@@ -24,65 +24,65 @@ def calcular_score(reporte: ReconReport) -> dict:
             "Referrer-Policy": 5,
             "Permissions-Policy": 5
         }
-        for cabecera, puntos in cabeceras_criticas.items():
-            if cabecera in reporte.headers.cabeceras_ausentes:
-                score += puntos
-                detalles.append((f"❌ {cabecera} ausente", +puntos))
+        for header, points in critical_headers.items():
+            if header in report.headers.missing_headers:
+                score += points
+                details.append((f"❌ {header} missing", +points))
             else:
-                score -= round(puntos * 0.3)
-                detalles.append((f"✅ {cabecera} presente", -round(puntos * 0.3)))
+                score -= round(points * 0.3)
+                details.append((f"✅ {header} present", -round(points * 0.3)))
 
-    # Filtraciones
-    if reporte.filtraciones:
-        total = reporte.filtraciones.total_registros
+    # Data breaches
+    if report.breaches:
+        total = report.breaches.total_records
         if total == 0:
             score -= 10
-            detalles.append(("✅ Sin filtraciones detectadas", -10))
+            details.append(("✅ No breaches detected", -10))
         elif total < 10:
             score += 10
-            detalles.append((f"⚠️ {total} filtraciones", +10))
+            details.append((f"⚠️ {total} breaches", +10))
         elif total < 100:
             score += 20
-            detalles.append((f"⚠️ {total} filtraciones", +20))
+            details.append((f"⚠️ {total} breaches", +20))
         elif total < 1000:
             score += 35
-            detalles.append((f"🚨 {total} filtraciones", +35))
+            details.append((f"🚨 {total} breaches", +35))
         else:
             score += 50
-            detalles.append((f"🚨 +1000 filtraciones", +50))
+            details.append((f"🚨 +1000 breaches", +50))
 
-    # Subdominios sensibles
-    subdominios_riesgo = ["admin", "staging", "dev", "test", "vpn", "jenkins", "jira"]
-    if reporte.subdominios:
-        encontrados = [s for s in reporte.subdominios 
-                      if any(r in s.lower() for r in subdominios_riesgo)]
-        if encontrados: 
-            score += len(encontrados) * 5
-            detalles.append((f"⚠️ {len(encontrados)} subdominios sensibles", +len(encontrados)*5))
+    # Sensitive subdomains
+    risky_subdomains = ["admin", "staging", "dev", "test", "vpn", "jenkins", "jira"]
+    if report.subdomains:
+        found = [s for s in report.subdomains 
+                 if any(r in s.lower() for r in risky_subdomains)]
+        if found: 
+            score += len(found) * 5
+            details.append((f"⚠️ {len(found)} sensitive subdomains", +len(found)*5))
 
-    # Herramientas fallidas
-    if reporte.herramientas_fallidas:
-        score += len(reporte.herramientas_fallidas) * 3
-        detalles.append((f"⚠️ {len(reporte.herramientas_fallidas)} herramientas fallidas", 
-                         +len(reporte.herramientas_fallidas)*3))
+    # Failed tools
+    if report.failed_tools:
+        score += len(report.failed_tools) * 3
+        details.append((f"⚠️ {len(report.failed_tools)} failed tools", 
+                        +len(report.failed_tools)*3))
 
-    # Calcular nivel
+    # Calculate level
     if score <= 10:
-        nivel = "BAJO"
+        level = "LOW"
         color = "green"
     elif score <= 30:
-        nivel = "MEDIO"
+        level = "MEDIUM"
         color = "yellow"
     elif score <= 60:
-        nivel = "ALTO"
+        level = "HIGH"
         color = "orange"
     else:
-        nivel = "CRÍTICO"
+        level = "CRITICAL"
         color = "red"
 
     return {
         "score": score,
-        "nivel": nivel,
+        "level": level,
         "color": color,
-        "detalles": detalles
+        "details": details
     }

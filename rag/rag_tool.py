@@ -1,15 +1,15 @@
 from langchain.tools import tool
-from rag.retriever import consultar_conocimiento
+from rag.retriever import query_knowledge
 
 @tool
-def consultar_base_conocimiento(pregunta: str) -> str:
+def query_knowledge_base(question: str) -> str:
     """
-    Consulta la base de conocimiento experta en ciberseguridad.
-    Úsala cuando necesites contexto sobre:
-    - Severidad de cabeceras HTTP ausentes
-    - Qué significa un tipo de filtración de datos
-    - Riesgo de subdominios expuestos
-    - Vulnerabilidades OWASP
-    - Interpretación de registros DNS
+    Queries the cybersecurity expert knowledge base.
+    Use it when you need context about:
+    - Severity of missing HTTP headers
+    - Meaning of a type of data breach
+    - Risk of exposed subdomains
+    - OWASP vulnerabilities
+    - Interpretation of DNS records
     """
-    return consultar_conocimiento(pregunta)
+    return query_knowledge(question)

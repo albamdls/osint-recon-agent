@@ -1,49 +1,44 @@
 import os
 from dotenv import load_dotenv
-
 from langchain.agents import create_agent
 from langchain.agents.middleware import TodoListMiddleware
-
 from src.tools import get_subdomains, get_whois_info, get_dns_records, get_http_headers, check_hibp
-from src.secrets_scanner import escanear_secretos_github
-from rag.rag_tool import consultar_base_conocimiento
+from src.secrets_scanner import scan_github_secrets
+from rag.rag_tool import query_knowledge_base
 
-# Cargar variables de entorno
 load_dotenv()
 
-# Definir las herramientas que usará el agente
-tools = [get_subdomains, get_whois_info, get_dns_records, get_http_headers, check_hibp, consultar_base_conocimiento, escanear_secretos_github]
+tools = [get_subdomains, get_whois_info, get_dns_records, get_http_headers,check_hibp, scan_github_secrets, query_knowledge_base]
 
-# Crear el agente
 agent = create_agent(
     model="anthropic:claude-haiku-4-5",
     tools=tools,
     middleware=[TodoListMiddleware()],
     system_prompt="""
-    Eres un analista experto en ciberseguridad y reconocimiento OSINT.
+    You are an expert cybersecurity analyst and OSINT reconnaissance specialist.
 
-    IMPORTANTE: Antes de ejecutar cualquier herramienta, DEBES usar write_todos para 
-    crear un plan de tareas. Esto es obligatorio en cada análisis.
+    IMPORTANT: Before executing any tool, you MUST use write_todos to create a task plan.
+    This is mandatory for every analysis.
 
-    REGLAS ESTRICTAS:
-    1. SIEMPRE usa las herramientas disponibles antes de responder. Nunca respondas sin haberlas ejecutado.
-    2. NUNCA inventes información. Si no tienes datos reales de las herramientas, dilo explícitamente.
-    3. Si una herramienta falla, reporta el error exacto que devuelve y continúa con las demás.
-    4. NUNCA uses conocimiento previo para sustituir los resultados de las herramientas.
-    5. Si los datos están vacíos o incompletos, indícalo claramente en el informe.
+    STRICT RULES:
+    1. ALWAYS use the available tools before responding. Never answer without executing them first.
+    2. NEVER fabricate information. If you don't have real data from the tools, state it explicitly.
+    3. If a tool fails, report the exact error it returns and continue with the remaining tools.
+    4. NEVER use prior knowledge to replace tool results.
+    5. If data is empty or incomplete, clearly indicate it in the report.
 
-    HERRAMIENTAS DISPONIBLES:
-    - get_subdomains: descubre subdominios consultando certificados SSL en crt.sh
-    - get_whois_info: obtiene información de registro del dominio (registrador, fechas, organización)
-    - get_dns_records: consulta registros DNS reales (A, MX, TXT, NS)
-    - get_http_headers: analiza cabeceras de seguridad HTTP y tecnologías expuestas
-    - check_hibp: verifica filtraciones de credenciales del dominio
-    - consultar_base_conocimiento: consulta la base de conocimiento experta en ciberseguridad para contextualizar hallazgos
-    - escanear_secretos_github: escanea repositorios públicos de GitHub en busca de secretos expuestos
+    AVAILABLE TOOLS:
+    - get_subdomains: discovers subdomains by querying SSL certificates on crt.sh
+    - get_whois_info: retrieves domain registration info (registrar, dates, organization)
+    - get_dns_records: queries real DNS records (A, MX, TXT, NS)
+    - get_http_headers: analyzes HTTP security headers and exposed technologies
+    - check_hibp: checks domain credential leaks
+    - query_knowledge_base: queries the expert cybersecurity knowledge base to contextualize findings
+    - scan_github_secrets: scans public GitHub repositories for exposed secrets
 
-    FORMATO DEL INFORME:
-    - Presenta los datos reales obtenidos de las herramientas
-    - Indica claramente qué herramientas funcionaron y cuáles fallaron
-    - No añadas información que no provenga de las herramientas
+    REPORT FORMAT:
+    - Present real data obtained from the tools
+    - Clearly indicate which tools succeeded and which failed
+    - Do not add information that does not come from the tools
     """
 )

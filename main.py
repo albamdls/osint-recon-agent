@@ -7,16 +7,16 @@ from rich.live import Live
 from rich.table import Table
 from rich.spinner import Spinner
 from pyfiglet import figlet_format
-from reports.pdf_generator import generar_pdf
+from reports.pdf_generator import generate_pdf
 import questionary
 import json
 from questionary import Style
-from src.structured_agent import analizar_dominio_estructurado
-from src.scorer import calcular_score
+from src.structured_agent import analyze_domain_structured
+from src.scorer import calculate_score
 
 console = Console()
 
-estilo_menu = Style([
+menu_style = Style([
     ('qmark', 'fg:cyan bold'),
     ('question', 'fg:white bold'),
     ('answer', 'fg:cyan bold'),
@@ -27,162 +27,157 @@ estilo_menu = Style([
     ('instruction', 'fg:white'),
 ])
 
-def mostrar_banner():
+def show_banner():
     banner = figlet_format("OSINT AI CLI", font="doom")
-    titulo = Text(banner, style="bold green")
-    subtitulo = Text()
-    subtitulo.append("[ ", style="green")
-    subtitulo.append("Reconocimiento OSINT con Inteligencia Artificial", style="bold white")
-    subtitulo.append(" ]", style="green")
-    autor = Text()
-    autor.append("[ ", style="green")
-    autor.append("Desarrollado por ", style="dim white")
-    autor.append("Alba Mora", style="bold green")
-    autor.append(" · Proyecto Final IA Automatización 2026", style="dim white")
-    autor.append(" ]", style="green")
+    title = Text(banner, style="bold green")
+    subtitle = Text()
+    subtitle.append("[ ", style="green")
+    subtitle.append("AI-Powered OSINT Reconnaissance Tool", style="bold white")
+    subtitle.append(" ]", style="green")
+    author = Text()
+    author.append("[ ", style="green")
+    author.append("Developed by ", style="dim white")
+    author.append("Alba Mora", style="bold green")
+    author.append(" · Final Project AI Automation 2026", style="dim white")
+    author.append(" ]", style="green")
     disclaimer = Text(justify="center")
     disclaimer.append("⚠  ", style="bold yellow")
-    disclaimer.append("SOLO PARA USO ACADÉMICO Y EDUCATIVO", style="bold yellow")
+    disclaimer.append("FOR ACADEMIC AND EDUCATIONAL USE ONLY", style="bold yellow")
     disclaimer.append("  ⚠", style="bold yellow")
-    disclaimer.append("\n   Esta herramienta está diseñada únicamente con fines de aprendizaje.", style="dim yellow")
-    disclaimer.append("\n   El uso no autorizado contra sistemas ajenos es ilegal.", style="dim yellow")
-    console.print(titulo, justify="center")
-    console.print(subtitulo, justify="center")
-    console.print(autor, justify="center")
+    disclaimer.append("\n   This tool is designed exclusively for learning purposes.", style="dim yellow")
+    console.print(title, justify="center")
+    console.print(subtitle, justify="center")
+    console.print(author, justify="center")
     console.print()
     console.print(Panel(disclaimer, border_style="yellow", padding=(0, 2)), justify="center")
     console.print()
 
-def mostrar_menu():
+def show_menu():
     return questionary.select(
-        "¿Qué quieres hacer?",
+        "What would you like to do?",
         choices=[
-            questionary.Choice("⚡ Análisis completo", value=1),
-            questionary.Choice("🔧 Análisis personalizado", value=2),
-            questionary.Choice("🔍 Escanear secretos en GitHub", value=3),
-            questionary.Choice("❌  Salir", value=4),
+            questionary.Choice("⚡ Full domain analysis", value=1),
+            questionary.Choice("🔧 Custom analysis", value=2),
+            questionary.Choice("🔍 Scan secrets in GitHub", value=3),
+            questionary.Choice("❌ Exit", value=4),
         ],
-        style=estilo_menu
+        style=menu_style
     ).ask()
 
-def mostrar_submenu():
+def show_submenu():
     return questionary.checkbox(
-        "Selecciona las herramientas:",
+        "Select tools to use:",
         choices=[
-            questionary.Choice("🌐 Subdominios (crt.sh)", value="Subdominios (crt.sh)"),
+            questionary.Choice("🌐 Subdomains (crt.sh)", value="Subdomains (crt.sh)"),
             questionary.Choice("📋 WHOIS", value="WHOIS"),
-            questionary.Choice("🔗 Registros DNS", value="Registros DNS"),
-            questionary.Choice("🔒 Headers HTTP", value="Headers HTTP"),
-            questionary.Choice("⚠️  Filtraciones (LeakCheck)", value="Filtraciones (LeakCheck)"),
+            questionary.Choice("🔗 DNS Records", value="DNS Records"),
+            questionary.Choice("🔒 HTTP Headers", value="HTTP Headers"),
+            questionary.Choice("⚠️ Credential Leaks (LeakCheck)", value="Credential Leaks (LeakCheck)"),
         ],
-        style=estilo_menu
+        style=menu_style
     ).ask()
 
-def construir_prompt(dominio, herramientas):
-    if herramientas is None:
-        return f"Realiza un análisis OSINT completo del dominio {dominio} usando todas las herramientas disponibles."
-    nombres = {
-        "Subdominios (crt.sh)": "get_subdomains",
+def build_prompt(domain, tools):
+    if tools is None:
+        return f"Perform a complete OSINT analysis of the domain {domain} using all available tools."
+    names = {
+        "Subdomains (crt.sh)": "get_subdomains",
         "WHOIS": "get_whois_info",
-        "Registros DNS": "get_dns_records",
-        "Headers HTTP": "get_http_headers",
-        "Filtraciones (LeakCheck)": "check_hibp"
+        "DNS Records": "get_dns_records",
+        "HTTP Headers": "get_http_headers",
+        "Credential Leaks (LeakCheck)": "check_hibp"
     }
-    tools_seleccionadas = [nombres[h] for h in herramientas]
-    tools_str = ", ".join(tools_seleccionadas)
-    return f"Analiza el dominio {dominio} usando ÚNICAMENTE estas herramientas: {tools_str}. No uses ninguna otra."
+    selected_tools = [names[t] for t in tools]
+    tools_str = ", ".join(selected_tools)
+    return f"Analyze the domain {domain} using ONLY these tools: {tools_str}. Do not use any other tool."
 
 while True:
-    mostrar_banner()
-    op = mostrar_menu()
+    show_banner()
+    op = show_menu()
 
-    # SALIR
     if op == 4:
-        console.print("\n[bold green]¡Hasta pronto!. 🤖⚡[/bold green]\n")
+        console.print("\n[bold green]Goodbye, agent. ⚡[/bold green]\n")
         break
 
-    # ESCANEAR SECRETOS EN GITHUB
     elif op == 3:
-        objetivo = questionary.text(
-            "Introduce usuario u organización de GitHub:",
-            style=estilo_menu
+        target = questionary.text(
+            "Enter GitHub user or organization:",
+            style=menu_style
         ).ask()
 
-        if objetivo:
-            from src.secrets_scanner import escanear_secretos_github
-            with console.status("[cyan]Escaneando repositorios...", spinner="dots"):
-                resultado_scan = escanear_secretos_github.invoke({"objetivo": objetivo})
-            console.print(Markdown(resultado_scan))
+        if target:
+            from src.secrets_scanner import scan_github_secrets
+            with console.status("[cyan]Scanning repositories...", spinner="dots"):
+                scan_result = scan_github_secrets.invoke({"target": target})
+            console.print(Markdown(scan_result))
         else:
-            console.print("[red]Usuario no válido.[/red]")
+            console.print("[red]Invalid user.[/red]")
         continue
 
-    # ANÁLISIS DE DOMINIO (completo o personalizado)
-    dominio = questionary.text(
-        "Introduce el dominio a analizar:",
-        style=estilo_menu
+    domain = questionary.text(
+        "Enter the domain to analyze:",
+        style=menu_style
     ).ask()
 
-    if not dominio:
-        console.print("[red]Dominio no válido.[/red]")
+    if not domain:
+        console.print("[red]Invalid domain.[/red]")
         continue
 
-    herramientas = None
+    tools = None
     if op == 2:
-        herramientas = mostrar_submenu()
-        if not herramientas:
-            console.print("[red]Debes seleccionar al menos una herramienta.[/red]")
+        tools = show_submenu()
+        if not tools:
+            console.print("[red]Please select at least one tool.[/red]")
             continue
 
-    prompt = construir_prompt(dominio, herramientas)
+    prompt = build_prompt(domain, tools)
     inputs = {"messages": [{"role": "user", "content": prompt}]}
 
-    mensajes_texto = []
+    text_messages = []
 
-    with console.status("[cyan]Analizando dominio...", spinner="dots"):
+    with console.status("[cyan]Analyzing domain...", spinner="dots"):
         for chunk in agent.stream(inputs, stream_mode="updates"):
             if "model" in chunk:
                 for msg in chunk["model"]["messages"]:
-                    contenido = getattr(msg, "content", "")
-                    if isinstance(contenido, str) and len(contenido) > 200:
-                        mensajes_texto.append(contenido)
-                    elif isinstance(contenido, list):
-                        for bloque in contenido:
-                            if isinstance(bloque, dict) and bloque.get("type") == "text":
-                                texto = bloque.get("text", "")
-                                if len(texto) > 200:
-                                    mensajes_texto.append(texto)
+                    content = getattr(msg, "content", "")
+                    if isinstance(content, str) and len(content) > 200:
+                        text_messages.append(content)
+                    elif isinstance(content, list):
+                        for block in content:
+                            if isinstance(block, dict) and block.get("type") == "text":
+                                text = block.get("text", "")
+                                if len(text) > 200:
+                                    text_messages.append(text)
 
-    resultado = max(mensajes_texto, key=len) if mensajes_texto else ""
-    console.print(Markdown(resultado))
+    result = max(text_messages, key=len) if text_messages else ""
+    console.print(Markdown(result))
 
-    # Score de riesgo
     try:
-        with console.status("[cyan]Calculando score de riesgo...", spinner="dots"):
-            reporte_estructurado = analizar_dominio_estructurado(dominio)
-            score_data = calcular_score(reporte_estructurado)
+        with console.status("[cyan]Calculating risk score...", spinner="dots"):
+            structured_report = analyze_domain_structured(domain)
+            score_data = calculate_score(structured_report)
 
-        score_texto = Text()
-        score_texto.append("\n🎯 SCORE DE RIESGO: ", style="bold")
-        score_texto.append(
-            f"{score_data['score']} puntos — {score_data['nivel']}",
+        score_text = Text()
+        score_text.append("\n🎯 RISK SCORE: ", style="bold")
+        score_text.append(
+            f"{score_data['score']} points — {score_data['level']}",
             style=f"bold {score_data['color']}"
         )
-        console.print(Panel(score_texto, border_style=score_data["color"], padding=(0, 2)))
+        console.print(Panel(score_text, border_style=score_data["color"], padding=(0, 2)))
     except Exception:
         pass
 
-    exportar = questionary.confirm(
-        "¿Deseas exportar el informe a PDF?",
-        style=estilo_menu
+    export = questionary.confirm(
+        "Would you like to export the report to PDF?",
+        style=menu_style
     ).ask()
 
-    if exportar:
-        nombre_custom = questionary.text(
-            "Nombre del fichero (Enter para nombre por defecto):",
-            style=estilo_menu
+    if export:
+        custom_name = questionary.text(
+            "Filename (press Enter for default):",
+            style=menu_style
         ).ask()
 
-        with console.status("[cyan]Generando PDF...", spinner="dots"):
-            fichero = generar_pdf(dominio, resultado, nombre_custom if nombre_custom else None)
-        console.print(f"\n[bold green]✔ PDF guardado en: {fichero}[/bold green]\n")
+        with console.status("[cyan]Generating PDF...", spinner="dots"):
+            file = generate_pdf(domain, result, custom_name if custom_name else None)
+        console.print(f"\n[bold green]✔ PDF saved at: {file}[/bold green]\n")

@@ -3,27 +3,27 @@ from datetime import datetime
 import os
 import re
 
-def limpiar_texto(texto: str) -> str:
-    texto = texto.replace("**", "").replace("*", "").replace("`", "")
-    texto = re.sub(r'[^\x00-\x7F\xC0-\xFF]', '', texto)
-    return texto.strip()
+def clean_text(text: str) -> str:
+    text = text.replace("**", "").replace("*", "").replace("`", "")
+    text = re.sub(r'[^\x00-\x7F\xC0-\xFF]', '', text)
+    return text.strip()
 
-def es_fila_tabla(linea: str) -> bool:
-    return linea.startswith("|") and linea.endswith("|")
+def is_table_row(line: str) -> bool:
+    return line.startswith("|") and line.endswith("|")
 
-def es_separador_tabla(linea: str) -> bool:
-    return es_fila_tabla(linea) and all(c in "|-: " for c in linea)
+def is_table_separator(line: str) -> bool:
+    return is_table_row(line) and all(c in "|-: " for c in line)
 
-def parsear_fila(linea: str) -> list:
-    celdas = linea.split("|")
-    return [limpiar_texto(c) for c in celdas if c.strip()]
+def parse_row(line: str) -> list:
+    cells = line.split("|")
+    return [clean_text(c) for c in cells if c.strip()]
 
 class OSINTPDFReport(FPDF):
     def header(self):
         self.set_font("DejaVu", "B", 10)
         self.set_text_color(0, 150, 0)
         self.set_x(15)
-        self.cell(0, 10, "OSINT AI CLI - Informe de Reconocimiento", align="C")
+        self.cell(0, 10, "OSINT AI CLI - Reconnaissance Report", align="C")
         self.set_draw_color(0, 200, 0)
         self.line(10, 18, 200, 18)
         self.ln(8)
@@ -33,9 +33,9 @@ class OSINTPDFReport(FPDF):
         self.set_font("DejaVu", "I", 8)
         self.set_text_color(128, 128, 128)
         self.set_x(15)
-        self.cell(0, 10, f"Solo para uso academico y educativo | Pagina {self.page_no()}", align="C")
+        self.cell(0, 10, f"For academic and educational use only | Page {self.page_no()}", align="C")
 
-def generar_pdf(dominio: str, contenido: str, nombre: str = None) -> str:
+def generate_pdf(domain: str, content: str, name: str = None) -> str:
     pdf = OSINTPDFReport()
     pdf.add_font("DejaVu", "", "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans.ttf")
     pdf.add_font("DejaVu", "B", "/usr/share/fonts/dejavu-sans-fonts/DejaVuSans-Bold.ttf")
@@ -47,20 +47,20 @@ def generar_pdf(dominio: str, contenido: str, nombre: str = None) -> str:
     pdf.set_font("DejaVu", "B", 18)
     pdf.set_text_color(0, 100, 0)
     pdf.set_x(15)
-    pdf.cell(0, 12, f"Analisis OSINT: {dominio}", align="C")
+    pdf.cell(0, 12, f"OSINT Analysis: {domain}", align="C")
     pdf.ln(6)
 
     pdf.set_font("DejaVu", "", 9)
     pdf.set_text_color(100, 100, 100)
-    fecha = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
     pdf.set_x(15)
-    pdf.cell(0, 6, f"Fecha de analisis: {fecha}", align="C")
+    pdf.cell(0, 6, f"Analysis date: {date}", align="C")
     pdf.ln(4)
     pdf.set_x(15)
-    pdf.cell(0, 6, "Herramienta: OSINT AI CLI | Proyecto Final IA Automatizacion 2026", align="C")
+    pdf.cell(0, 6, "Tool: OSINT AI CLI | Final Project AI Automation 2026", align="C")
     pdf.ln(4)
     pdf.set_x(15)
-    pdf.cell(0, 6, "Desarrollado por: Alba Mora", align="C")
+    pdf.cell(0, 6, "Developed by: Alba Mora", align="C")
     pdf.ln(8)
 
     pdf.set_draw_color(0, 150, 0)
@@ -71,26 +71,26 @@ def generar_pdf(dominio: str, contenido: str, nombre: str = None) -> str:
     pdf.set_text_color(150, 100, 0)
     pdf.set_font("DejaVu", "B", 9)
     pdf.set_x(15)
-    pdf.cell(0, 7, "SOLO PARA USO ACADEMICO Y EDUCATIVO. El uso no autorizado es ilegal.",
+    pdf.cell(0, 7, "FOR ACADEMIC AND EDUCATIONAL USE ONLY.",
              fill=True, align="C")
     pdf.ln(10)
 
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("DejaVu", "", 10)
 
-    lineas = contenido.split("\n")
-    filas_tabla = []
+    lines = content.split("\n")
+    table_rows = []
 
-    for linea in lineas:
-        linea = linea.strip()
+    for line in lines:
+        line = line.strip()
 
-        if es_fila_tabla(linea):
-            if not es_separador_tabla(linea):
-                filas_tabla.append(parsear_fila(linea))
+        if is_table_row(line):
+            if not is_table_separator(line):
+                table_rows.append(parse_row(line))
             continue
 
-        if filas_tabla:
-            headers = filas_tabla[0]
+        if table_rows:
+            headers = table_rows[0]
             if headers:
                 col_width = (pdf.w - 30) / len(headers)
                 pdf.set_font("DejaVu", "B", 9)
@@ -103,78 +103,78 @@ def generar_pdf(dominio: str, contenido: str, nombre: str = None) -> str:
                 pdf.set_font("DejaVu", "", 9)
                 pdf.set_fill_color(255, 255, 255)
                 pdf.set_text_color(0, 0, 0)
-                for fila in filas_tabla[1:]:
+                for row in table_rows[1:]:
                     pdf.set_x(15)
-                    for i, celda in enumerate(fila):
+                    for i, cell in enumerate(row):
                         if i < len(headers):
-                            pdf.cell(col_width, 6, celda[:35], border=1)
+                            pdf.cell(col_width, 6, cell[:35], border=1)
                     pdf.ln()
                 pdf.ln(4)
-            filas_tabla = []
+            table_rows = []
 
-        if not linea:
+        if not line:
             pdf.ln(3)
             continue
 
-        if linea.startswith("## "):
+        if line.startswith("## "):
             pdf.ln(4)
             pdf.set_font("DejaVu", "B", 13)
             pdf.set_text_color(0, 100, 0)
             pdf.set_x(15)
-            pdf.multi_cell(0, 8, limpiar_texto(linea.replace("## ", "").replace("#", "")))
+            pdf.multi_cell(0, 8, clean_text(line.replace("## ", "").replace("#", "")))
             pdf.set_draw_color(0, 180, 0)
             pdf.line(15, pdf.get_y(), 195, pdf.get_y())
             pdf.ln(3)
             pdf.set_font("DejaVu", "", 10)
             pdf.set_text_color(0, 0, 0)
 
-        elif linea.startswith("# "):
+        elif line.startswith("# "):
             pdf.ln(4)
             pdf.set_font("DejaVu", "B", 15)
             pdf.set_text_color(0, 80, 0)
             pdf.set_x(15)
-            pdf.multi_cell(0, 9, limpiar_texto(linea.replace("# ", "")))
+            pdf.multi_cell(0, 9, clean_text(line.replace("# ", "")))
             pdf.ln(2)
             pdf.set_font("DejaVu", "", 10)
             pdf.set_text_color(0, 0, 0)
 
-        elif linea.startswith("### "):
+        elif line.startswith("### "):
             pdf.ln(3)
             pdf.set_font("DejaVu", "B", 11)
             pdf.set_text_color(0, 120, 0)
             pdf.set_x(15)
-            pdf.multi_cell(0, 7, limpiar_texto(linea.replace("### ", "")))
+            pdf.multi_cell(0, 7, clean_text(line.replace("### ", "")))
             pdf.ln(2)
             pdf.set_font("DejaVu", "", 10)
             pdf.set_text_color(0, 0, 0)
 
-        elif linea.startswith("- ") or linea.startswith("• "):
-            texto = limpiar_texto(linea.replace("- ", "").replace("• ", ""))
+        elif line.startswith("- ") or line.startswith("• "):
+            text = clean_text(line.replace("- ", "").replace("• ", ""))
             pdf.set_font("DejaVu", "", 10)
             pdf.set_x(15)
-            pdf.multi_cell(0, 6, f"- {texto}")
+            pdf.multi_cell(0, 6, f"- {text}")
 
-        elif len(linea) > 2 and linea[0].isdigit() and linea[1] in [".", ")"]:
-            texto = limpiar_texto(linea[2:])
+        elif len(line) > 2 and line[0].isdigit() and line[1] in [".", ")"]:
+            text = clean_text(line[2:])
             pdf.set_font("DejaVu", "", 10)
             pdf.set_x(15)
-            pdf.multi_cell(0, 6, f"{linea[:2]} {texto}")
+            pdf.multi_cell(0, 6, f"{line[:2]} {text}")
 
-        elif linea.startswith("---"):
+        elif line.startswith("---"):
             pdf.ln(2)
             pdf.set_draw_color(200, 200, 200)
             pdf.line(15, pdf.get_y(), 195, pdf.get_y())
             pdf.ln(4)
 
         else:
-            texto = limpiar_texto(linea)
-            if texto:
+            text = clean_text(line)
+            if text:
                 pdf.set_font("DejaVu", "", 10)
                 pdf.set_x(15)
-                pdf.multi_cell(0, 6, texto)
+                pdf.multi_cell(0, 6, text)
 
-    if filas_tabla:
-        headers = filas_tabla[0]
+    if table_rows:
+        headers = table_rows[0]
         if headers:
             col_width = (pdf.w - 30) / len(headers)
             pdf.set_font("DejaVu", "B", 9)
@@ -187,22 +187,22 @@ def generar_pdf(dominio: str, contenido: str, nombre: str = None) -> str:
             pdf.set_font("DejaVu", "", 9)
             pdf.set_fill_color(255, 255, 255)
             pdf.set_text_color(0, 0, 0)
-            for fila in filas_tabla[1:]:
+            for row in table_rows[1:]:
                 pdf.set_x(15)
-                for i, celda in enumerate(fila):
+                for i, cell in enumerate(row):
                     if i < len(headers):
-                        pdf.cell(col_width, 6, celda[:35], border=1)
+                        pdf.cell(col_width, 6, cell[:35], border=1)
                 pdf.ln()
 
-    os.makedirs("informes", exist_ok=True)
-    if nombre:
-        nombre = nombre.replace(" ", "_")
-        if not nombre.endswith(".pdf"):
-            nombre += ".pdf"
-        nombre_fichero = f"informes/{nombre}"
+    os.makedirs("reports", exist_ok=True)
+    if name:
+        name = name.replace(" ", "_")
+        if not name.endswith(".pdf"):
+            name += ".pdf"
+        file_name = f"reports/{name}"
     else:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        nombre_fichero = f"informes/osint_{dominio}_{timestamp}.pdf"
+        file_name = f"pdf_reports/osint_{domain}_{timestamp}.pdf"
 
-    pdf.output(nombre_fichero)
-    return nombre_fichero
+    pdf.output(file_name)
+    return file_name

@@ -5,40 +5,40 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 
-def crear_base_conocimiento(data_dir: str = "rag/data", db_dir: str = "rag/chroma_db"):
-    """Indexa los documentos markdown en ChromaDB."""
+def create_knowledge_base(data_dir: str = "rag/data", db_dir: str = "rag/chroma_db"):
+    """Indexes markdown documents into ChromaDB."""
     
-    print("📚 Cargando documentos...")
+    print("📚 Loading documents...")
     loader = DirectoryLoader(
         data_dir,
         glob="*.md",
         loader_cls=TextLoader,
         loader_kwargs={"encoding": "utf-8"}
     )
-    documentos = loader.load()
-    print(f"✅ {len(documentos)} documentos cargados")
+    documents = loader.load()
+    print(f"✅ {len(documents)} documents loaded")
 
-    print("✂️ Dividiendo en chunks...")
+    print("✂️ Splitting into chunks...")
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=500,
         chunk_overlap=50
     )
-    chunks = splitter.split_documents(documentos)
-    print(f"✅ {len(chunks)} chunks creados")
+    chunks = splitter.split_documents(documents)
+    print(f"✅ {len(chunks)} chunks created")
 
-    print("🔢 Creando embeddings...")
+    print("🔢 Creating embeddings...")
     embeddings = HuggingFaceEmbeddings(
         model_name="sentence-transformers/all-MiniLM-L6-v2"
     )
 
-    print("💾 Indexando en ChromaDB...")
+    print("💾 Indexing into ChromaDB...")
     vectorstore = Chroma.from_documents(
         documents=chunks,
         embedding=embeddings,
         persist_directory=db_dir
     )
-    print(f"✅ Base de conocimiento creada en {db_dir}")
+    print(f"✅ Knowledge base created at {db_dir}")
     return vectorstore
 
 if __name__ == "__main__":
-    crear_base_conocimiento()
+    create_knowledge_base()
