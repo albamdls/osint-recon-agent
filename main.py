@@ -11,7 +11,6 @@ from reports.pdf_generator import generar_pdf
 import questionary
 import json
 from questionary import Style
-
 from src.structured_agent import analizar_dominio_estructurado
 from src.scorer import calcular_score
 
@@ -60,7 +59,8 @@ def mostrar_menu():
         choices=[
             questionary.Choice("⚡ Análisis completo", value=1),
             questionary.Choice("🔧 Análisis personalizado", value=2),
-            questionary.Choice("❌  Salir", value=3),
+            questionary.Choice("🔍 Escanear secretos en GitHub", value=3),
+            questionary.Choice("❌  Salir", value=4),
         ],
         style=estilo_menu
     ).ask()
@@ -96,10 +96,28 @@ while True:
     mostrar_banner()
     op = mostrar_menu()
 
-    if op == 3:
+    # SALIR
+    if op == 4:
         console.print("\n[bold green]¡Hasta pronto!. 🤖⚡[/bold green]\n")
         break
 
+    # ESCANEAR SECRETOS EN GITHUB
+    elif op == 3:
+        objetivo = questionary.text(
+            "Introduce usuario u organización de GitHub:",
+            style=estilo_menu
+        ).ask()
+
+        if objetivo:
+            from src.secrets_scanner import escanear_secretos_github
+            with console.status("[cyan]Escaneando repositorios...", spinner="dots"):
+                resultado_scan = escanear_secretos_github.invoke({"objetivo": objetivo})
+            console.print(Markdown(resultado_scan))
+        else:
+            console.print("[red]Usuario no válido.[/red]")
+        continue
+
+    # ANÁLISIS DE DOMINIO (completo o personalizado)
     dominio = questionary.text(
         "Introduce el dominio a analizar:",
         style=estilo_menu
@@ -119,7 +137,6 @@ while True:
     prompt = construir_prompt(dominio, herramientas)
     inputs = {"messages": [{"role": "user", "content": prompt}]}
 
-    resultado = ""
     mensajes_texto = []
 
     with console.status("[cyan]Analizando dominio...", spinner="dots"):
@@ -136,28 +153,23 @@ while True:
                                 if len(texto) > 200:
                                     mensajes_texto.append(texto)
 
-    if mensajes_texto:
-        resultado = max(mensajes_texto, key=len)
-    else:
-        resultado = ""
-
+    resultado = max(mensajes_texto, key=len) if mensajes_texto else ""
     console.print(Markdown(resultado))
 
-    # Calcular y mostrar score
+    # Score de riesgo
     try:
         with console.status("[cyan]Calculando score de riesgo...", spinner="dots"):
             reporte_estructurado = analizar_dominio_estructurado(dominio)
             score_data = calcular_score(reporte_estructurado)
-        
-        color = score_data["color"]
-        nivel = score_data["nivel"]
-        score = score_data["score"]
-        
+
         score_texto = Text()
-        score_texto.append(f"\n🎯 SCORE DE RIESGO: ", style="bold")
-        score_texto.append(f"{score} puntos — {nivel}", style=f"bold {color}")
-        console.print(Panel(score_texto, border_style=color, padding=(0, 2)))
-    except Exception as e:
+        score_texto.append("\n🎯 SCORE DE RIESGO: ", style="bold")
+        score_texto.append(
+            f"{score_data['score']} puntos — {score_data['nivel']}",
+            style=f"bold {score_data['color']}"
+        )
+        console.print(Panel(score_texto, border_style=score_data["color"], padding=(0, 2)))
+    except Exception:
         pass
 
     exportar = questionary.confirm(
