@@ -12,6 +12,9 @@ import questionary
 import json
 from questionary import Style
 
+from src.structured_agent import analizar_dominio_estructurado
+from src.scorer import calcular_score
+
 console = Console()
 
 estilo_menu = Style([
@@ -139,6 +142,23 @@ while True:
         resultado = ""
 
     console.print(Markdown(resultado))
+
+    # Calcular y mostrar score
+    try:
+        with console.status("[cyan]Calculando score de riesgo...", spinner="dots"):
+            reporte_estructurado = analizar_dominio_estructurado(dominio)
+            score_data = calcular_score(reporte_estructurado)
+        
+        color = score_data["color"]
+        nivel = score_data["nivel"]
+        score = score_data["score"]
+        
+        score_texto = Text()
+        score_texto.append(f"\n🎯 SCORE DE RIESGO: ", style="bold")
+        score_texto.append(f"{score} puntos — {nivel}", style=f"bold {color}")
+        console.print(Panel(score_texto, border_style=color, padding=(0, 2)))
+    except Exception as e:
+        pass
 
     exportar = questionary.confirm(
         "¿Deseas exportar el informe a PDF?",
