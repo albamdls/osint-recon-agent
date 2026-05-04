@@ -38,7 +38,7 @@ def mostrar_banner():
     autor.append("[ ", style="green")
     autor.append("Desarrollado por ", style="dim white")
     autor.append("Alba Mora", style="bold green")
-    autor.append(" · Proyecto Final IA Automatización 2025", style="dim white")
+    autor.append(" · Proyecto Final IA Automatización 2026", style="dim white")
     autor.append(" ]", style="green")
     disclaimer = Text(justify="center")
     disclaimer.append("⚠  ", style="bold yellow")

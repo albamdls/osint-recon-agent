@@ -57,7 +57,7 @@ def generar_pdf(dominio: str, contenido: str, nombre: str = None) -> str:
     pdf.cell(0, 6, f"Fecha de analisis: {fecha}", align="C")
     pdf.ln(4)
     pdf.set_x(15)
-    pdf.cell(0, 6, "Herramienta: OSINT AI CLI | Proyecto Final IA Automatizacion 2025", align="C")
+    pdf.cell(0, 6, "Herramienta: OSINT AI CLI | Proyecto Final IA Automatizacion 2026", align="C")
     pdf.ln(4)
     pdf.set_x(15)
     pdf.cell(0, 6, "Desarrollado por: Alba Mora", align="C")
